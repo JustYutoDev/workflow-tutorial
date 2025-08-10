@@ -1,8 +1,8 @@
 name: Greet on PR
 
 on:
-  pull_request_target:
-    types: [opened]
+  pull_request:
+    types: [opened, edited]
 
 jobs:
   greet:
