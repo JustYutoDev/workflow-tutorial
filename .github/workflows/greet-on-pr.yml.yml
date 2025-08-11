@@ -8,13 +8,42 @@ jobs:
   greet:
     runs-on: ubuntu-latest
     steps:
-      - name: Comment on PR
+      - name: Find previous bot comment
+        id: find_comment
         uses: actions/github-script@v6
         with:
           script: |
-            github.rest.issues.createComment({
+            const comments = await github.rest.issues.listComments({
               issue_number: context.payload.pull_request.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'こんにちは！'
-            })
+            });
+            // Botが残した「こんにちは！」コメントを探す
+            const botComment = comments.data.find(c =>
+              c.user.type === "Bot" &&
+              c.body === "こんにちは！"
+            );
+            return botComment ? botComment.id : "";
+
+      - name: Create or edit comment
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const comment_id = '${{ steps.find_comment.outputs.result }}';
+            if (comment_id) {
+              // コメントを編集
+              await github.rest.issues.updateComment({
+                comment_id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: 'これは編集したコメントです'
+              });
+            } else {
+              // 新規コメント
+              await github.rest.issues.createComment({
+                issue_number: context.payload.pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: 'こんにちは！'
+              });
+            }
